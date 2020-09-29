@@ -1,12 +1,16 @@
 let AWS = require('aws-sdk')
 let https = require('follow-redirects').https
 
+/**
+ * Tha main handlder function to grab a random image, put it in S3 and put a related entry into dynamodb
+ * @param {object} event 
+ * @param {object} context 
+ */
 const imageGenerator = async (event, context) => {
-  let s3 = new AWS.S3()
   let ddb = new AWS.DynamoDB({apiVersion: '2012-08-10'})
 
   for (let record of event.Records) {
-    const { filename: body } = record
+    const { body: filename } = record
     console.log('body:', filename)
 
     await getImage(filename)
@@ -14,8 +18,12 @@ const imageGenerator = async (event, context) => {
     await ddb.putItem({
       TableName: 'ImageList',
       Item: {
-        filename: filename,
-        extension: 'jpg',
+        filename: {
+          S: filename
+        },
+        extension: {
+          S: 'jpg'
+        },
       }
     }, function(err, data) {
       if (err) {
@@ -29,15 +37,20 @@ const imageGenerator = async (event, context) => {
   return {}
 }
 
-function getImage(filename) {
+/**
+ * Gets a random image from picsum.photos and stores it in S3
+ * @param {string} filename 
+ */
+const getImage = (filename) => {
   return new Promise((resolve, reject) => {
     const req = https.get(
-      'https://picsum.photos/200/300.jpg', 
+      'https://picsum.photos/300/200.jpg', 
       (res) => {
         if (res.statusCode < 200 || res.statusCode >= 400) {
           return reject(new Error('statusCode=' + res.statusCode))
         }
 
+        let s3 = new AWS.S3()
         let imageData = '' 
       
         res.setEncoding('binary')
@@ -72,5 +85,6 @@ function getImage(filename) {
 }
 
 module.exports = {
-  imageGenerator
+  imageGenerator,
+  getImage
 }

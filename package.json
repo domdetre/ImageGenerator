@@ -1,15 +1,15 @@
 {
-  "name": "imageconverter",
+  "name": "image-generator",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "serverless": "^2.3.0",
-    "serverless-plugin-elastic-beanstalk": "^1.5.1"
+    "jest": "^26.4.2",
+    "serverless": "^2.3.0"
   }
 }

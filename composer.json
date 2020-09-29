@@ -1,5 +1,5 @@
 {
-		"name": "domdetre/image-processor",
+		"name": "domdetre/image-generator",
     "type": "project",
     "license": "GPL-3.0-only",
     "require": {

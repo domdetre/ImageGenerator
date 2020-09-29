@@ -10,6 +10,10 @@ provider:
       Action:
         - s3:*
       Resource: arn:aws:s3:::images-dfd/*
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+      Resource: arn:aws:dynamodb:eu-west-1:*:table/ImageList
 
 layers:
   Source:
