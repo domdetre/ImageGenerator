@@ -1,0 +1,120 @@
+service: ImageGenerator
+
+provider:
+  name: aws
+  region: eu-west-1
+  runtime: nodejs12.x
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - s3:*
+      Resource: arn:aws:s3:::images-dfd/*
+
+layers:
+  Source:
+    path: lambda-layer
+    package:
+      include:
+        - 'nodejs/node_modules/**'
+
+package:
+  include:
+    - 'index.js'
+  exclude:
+    - '**/*'
+
+resources:
+  Resources:
+    ImageGeneratorQueue:
+      Type: AWS::SQS::Queue
+      Properties: 
+        QueueName: ImageGenerator
+    
+    ImageGeneratorApplication:
+      Type: AWS::ElasticBeanstalk::Application
+      Properties:
+        ApplicationName: ImageGeneratorApplication
+        Description: ImageGenerator Application
+
+    ImageGeneratorApplicationVersion:
+      DependsOn:
+        - ImageGeneratorApplication
+      Type: AWS::ElasticBeanstalk::ApplicationVersion
+      Properties: 
+        ApplicationName:
+          Ref: ImageGeneratorApplication
+        SourceBundle: 
+          S3Bucket: ${opt:S3Bucket}
+          S3Key: ${opt:S3ApplicationVersionKey}
+    
+    ImageGeneratorEnvironment:
+      DependsOn:
+        - ImageGeneratorQueue
+        - ImageGeneratorApplication
+      Type: AWS::ElasticBeanstalk::Environment
+      Properties:
+        ApplicationName:
+          Ref: ImageGeneratorApplication
+        EnvironmentName: ImageGeneratorEnvironment
+        Description: ImageGenerator Environment
+        SolutionStackName: 64bit Amazon Linux 2 v3.1.1 running PHP 7.4
+        VersionLabel: 
+          Ref: ImageGeneratorApplicationVersion
+        OptionSettings:
+          - Namespace: aws:autoscaling:launchconfiguration
+            OptionName: InstanceType
+            Value: t2.small
+          - Namespace: aws:autoscaling:launchconfiguration
+            OptionName: EC2KeyName
+            Value: dfd-general
+          - Namespace: aws:autoscaling:launchconfiguration
+            OptionName: IamInstanceProfile
+            Value: aws-elasticbeanstalk-ec2-role
+          - Namespace: aws:elasticbeanstalk:container:php:phpini
+            OptionName: document_root
+            Value: /public
+          - Namespace: aws:elasticbeanstalk:application:environment
+            OptionName: SQS_URL
+            Value:
+              Ref: ImageGeneratorQueue
+
+    ImageGeneratorSecurityGroup:
+      Type: AWS::ElastiCache::SecurityGroup
+      Properties: 
+        Description: ImageGenerator SecurityGroup
+    
+    ImageGeneratorCache:
+      DependsOn:
+        - ImageGeneratorSecurityGroup
+      Type: AWS::ElastiCache::CacheCluster
+      Properties: 
+        CacheNodeType: cache.t2.small
+        ClusterName: ImageGeneratorCache
+        Engine: memcached
+        CacheSecurityGroupNames:
+          - Ref: ImageGeneratorSecurityGroup
+        NumCacheNodes: 1
+
+    ImageGeneratorDatabase:
+      Type: AWS::DynamoDB::Table
+      Properties: 
+        TableName: ImageList
+        AttributeDefinitions: 
+          - AttributeName: filename
+            AttributeType: S
+        KeySchema: 
+          - AttributeName: filename
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST 
+
+functions:
+  ImageGenerator:
+    handler: index.imageGenerator
+    layers:
+      - { Ref: SourceLambdaLayer }
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt: [ImageGeneratorQueue, Arn]
+          batchSize: 1
