@@ -1,5 +1,6 @@
 .*
 !.gitignore
+!.ebextensions
 
 ###> symfony/framework-bundle ###
 /.env.local

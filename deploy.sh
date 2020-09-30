@@ -4,8 +4,10 @@ set -a
 . ./.env.local
 set +a
 
+stage=${1-'dev'}
+
 appVersion=`date +%F_%H-%M-%S`
-filename="ImageConverter_$appVersion.zip"
+filename="ImageConverter_${stage}_${appVersion}.zip"
 
 zip \
 	-x ".temp/*" \
@@ -24,4 +26,4 @@ aws s3 cp .temp/$filename s3://$S3_BUCKET/$filename \
 
 # rm .temp/$filename
 
-npx sls deploy --S3Bucket $S3_BUCKET --S3ApplicationVersionKey $filename
+npx sls deploy --S3Bucket $S3_BUCKET --S3ApplicationVersionKey $filename --stage $stage

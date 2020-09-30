@@ -7,21 +7,19 @@
 
   <hr/>
 
-  <div class="container">
-    {% for imageItem in imageList %}
-      {# <div class="row">
-        <div class="col-md"> #}
-          <div class="card" style="width: 18rem;">
-            <img class="card-img-top" src="https://images-dfd.s3-eu-west-1.amazonaws.com/{{ imageItem.filename }}.{{ imageItem.extension }}" alt="Card image cap">
-            <div class="card-body">
-              <h5 class="card-title">{{ loop.index }}. {{ imageItem.filename }}</h5>
-              <p class="card-text">ctime: {{ imageItem.ctime }}</p>
-            </div>
-          </div>
-        {# </div>
-      </div> #}
-    {% endfor %}
+  <div class="container" id="image-list-container">
+    <div class="card" style="width: 18rem;" hidden="hidden">
+      <img class="card-img-top" src="" alt="Card image" loading="lazy">
+      <div class="card-body">
+        <h5 class="card-title"></h5>
+        <p class="card-text"></p>
+      </div>
+    </div>
   </div>
 
   <hr/>
+
+  <pre>
+    {{ dump(generatedUuids) }}
+  </pre>
 {% endblock %}

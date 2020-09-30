@@ -4,6 +4,7 @@ provider:
   name: aws
   region: eu-west-1
   runtime: nodejs12.x
+  stage: ${opt:stage, 'dev'}
 
   iamRoleStatements:
     - Effect: Allow
@@ -33,12 +34,12 @@ resources:
     ImageGeneratorQueue:
       Type: AWS::SQS::Queue
       Properties: 
-        QueueName: ImageGenerator
+        QueueName: ImageGenerator-${self:provider.stage}
     
     ImageGeneratorApplication:
       Type: AWS::ElasticBeanstalk::Application
       Properties:
-        ApplicationName: ImageGeneratorApplication
+        ApplicationName: ImageGeneratorApplication-${self:provider.stage}
         Description: ImageGenerator Application
 
     ImageGeneratorApplicationVersion:
@@ -60,9 +61,9 @@ resources:
       Properties:
         ApplicationName:
           Ref: ImageGeneratorApplication
-        EnvironmentName: ImageGeneratorEnvironment
+        EnvironmentName: ImageGeneratorEnvironment-${self:provider.stage}
         Description: ImageGenerator Environment
-        SolutionStackName: 64bit Amazon Linux 2 v3.1.1 running PHP 7.4
+        SolutionStackName: 64bit Amazon Linux 2 v3.1.1 running PHP 7.3
         VersionLabel: 
           Ref: ImageGeneratorApplicationVersion
         OptionSettings:
@@ -88,6 +89,13 @@ resources:
             OptionName: SQS_URL
             Value:
               Ref: ImageGeneratorQueue
+          - Namespace: aws:elasticbeanstalk:application:environment
+            OptionName: MEMCACHED_ADDRESS
+            Value:
+              Fn::GetAtt: [ImageGeneratorCache, ConfigurationEndpoint.Address]
+          - Namespace: aws:elasticbeanstalk:application:environment
+            OptionName: DYNAMODB_TABLE
+            Value: ImageList-${self:provider.stage}
 
     ImageGeneratorSecurityGroup:
       Type: AWS::ElastiCache::SecurityGroup
@@ -100,7 +108,7 @@ resources:
       Type: AWS::ElastiCache::CacheCluster
       Properties: 
         CacheNodeType: cache.t2.small
-        ClusterName: ImageGeneratorCache
+        ClusterName: ImageGeneratorCache-${self:provider.stage}
         Engine: memcached
         CacheSecurityGroupNames:
           - Ref: ImageGeneratorSecurityGroup
@@ -109,7 +117,7 @@ resources:
     ImageGeneratorDatabase:
       Type: AWS::DynamoDB::Table
       Properties: 
-        TableName: ImageList
+        TableName: ImageList-${self:provider.stage}
         AttributeDefinitions: 
           - AttributeName: filename
             AttributeType: S
@@ -123,6 +131,8 @@ functions:
     handler: index.imageGenerator
     layers:
       - { Ref: SourceLambdaLayer }
+    environment:
+      DYNAMODB_TABLE: ImageList-${self:provider.stage}
     events:
       - sqs:
           arn:

@@ -2,7 +2,7 @@ let AWS = require('aws-sdk')
 let https = require('follow-redirects').https
 
 /**
- * Tha main handlder function to grab a random image, put it in S3 and put a related entry into dynamodb
+ * Tha main handler function to grab a random image, put it in S3 and put a related entry into dynamodb
  * @param {object} event 
  * @param {object} context 
  */
@@ -16,7 +16,7 @@ const imageGenerator = async (event, context) => {
     await getImage(filename)
     
     await ddb.putItem({
-      TableName: 'ImageList',
+      TableName: process.env.DYNAMODB_TABLE,
       Item: {
         filename: {
           S: filename

@@ -115,7 +115,7 @@
         "version": "2.8.0"
     },
     "php": {
-        "version": "7.4"
+        "version": "7.3"
     },
     "psr/cache": {
         "version": "1.0.1"
@@ -143,6 +143,9 @@
     },
     "ramsey/uuid": {
         "version": "4.1.1"
+    },
+    "symfony/asset": {
+        "version": "v5.1.6"
     },
     "symfony/cache": {
         "version": "v5.1.6"

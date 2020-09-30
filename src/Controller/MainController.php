@@ -36,10 +36,11 @@ class MainController extends AbstractController
       ];
     }
 
-    // switch($client) {
-    //   case 'dynamodb':
-    //     $awsConfiguration['endpoint'] = getenv('DYNAMODB_ENDPOINT');
-    // }
+    switch($client) {
+      case 'dynamodb':
+        $endpoint = getenv('DYNAMODB_ENDPOINT');
+        $endpoint ? $awsConfiguration['endpoint'] = $endpoint : null;
+    }
 
     return $awsConfiguration;
   }
@@ -51,11 +52,7 @@ class MainController extends AbstractController
    * @return array The indexed list of images
    */
   private function imageList() {
-    $client = MemcachedAdapter::createConnection([
-      'memcached://memcached1',
-      'memcached://memcached2',
-      'memcached://memcached3',
-    ]);
+    $client = MemcachedAdapter::createConnection(getenv('MEMCACHED_ADDRESS'));
     $cache  = new MemcachedAdapter($client, $namespace = 'imageGenerator', $defaultLifetime = 300);
 
     return $cache->get('imageList', function (ItemInterface $item) {
@@ -63,7 +60,7 @@ class MainController extends AbstractController
 
       $ddb = new DynamoDbClient($this->awsConfiguration('dynamodb'));
       $results = $ddb->scan([
-        'TableName' => 'ImageList'
+        'TableName' => getenv('DYNAMODB_TABLE')
       ]);
 
       return array_map(
@@ -110,7 +107,6 @@ class MainController extends AbstractController
 
     return $this->render('main/index.html.twig', [
       'form' => $form->createView(),
-      'imageList' => $this->imageList(),
       'generatedUuids' => $generatedUuids,
     ]);
   }
