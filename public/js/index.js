@@ -2,7 +2,7 @@
  * Grab the list of images as JSON and append the new images into the container as cards
  */
 const fetchList = () => {
-  $.getJSON("images", (imageList) => {
+  $.getJSON("index.php/images", (imageList) => {
     $.each(imageList, (key, imageItem) => {
       if (!$(`#image-card-${imageItem.filename}`).length) {
         let imageCard = `
