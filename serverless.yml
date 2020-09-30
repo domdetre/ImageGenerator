@@ -14,7 +14,7 @@ provider:
     - Effect: Allow
       Action:
         - dynamodb:PutItem
-      Resource: arn:aws:dynamodb:eu-west-1:*:table/ImageList
+      Resource: arn:aws:dynamodb:eu-west-1:*:table/ImageList*
 
 layers:
   Source:
