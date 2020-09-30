@@ -4,11 +4,14 @@ namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Aws\Sdk;
 use Aws\DynamoDb\DynamoDbClient;
 use Aws\Sqs\SqsClient;
-use Symfony\Component\HttpFoundation\Request;
 use Ramsey\Uuid\Uuid;
+use Symfony\Component\Cache\Adapter\MemcachedAdapter;
+use Symfony\Contracts\Cache\ItemInterface;
 
 use App\Form\ImageGeneratorType;
 
@@ -18,11 +21,11 @@ class MainController extends AbstractController
    * Builds a configuration array for AWS clients
    *
    * @param string $client The target client to build the config for or leave empty for a general one
-   * @return array An associatiave array of configration dictatedd by AWS
+   * @return array An associatiave array of configration dictated by AWS
    */
   private function awsConfiguration($client = 'general') {
     $awsConfiguration = [
-      'region'   => getenv('AWS_DEFAULT_REGION') ?? 'eu-west-1',
+      'region'   => getenv('AWS_DEFAULT_REGION') ?: 'eu-west-1',
       'version'  => 'latest'
     ];
 
@@ -33,12 +36,47 @@ class MainController extends AbstractController
       ];
     }
 
-    switch($client) {
-      case 'dynamodb':
-        $awsConfiguration['endpoint'] = 'http://dynamodb:8000';
-    }
+    // switch($client) {
+    //   case 'dynamodb':
+    //     $awsConfiguration['endpoint'] = getenv('DYNAMODB_ENDPOINT');
+    // }
 
     return $awsConfiguration;
+  }
+
+  /**
+   * Fetches the list of images.
+   * Uses a dynamodb scan to retrieve the list and caches in memcached.
+   *
+   * @return array The indexed list of images
+   */
+  private function imageList() {
+    $client = MemcachedAdapter::createConnection([
+      'memcached://memcached1',
+      'memcached://memcached2',
+      'memcached://memcached3',
+    ]);
+    $cache  = new MemcachedAdapter($client, $namespace = 'imageGenerator', $defaultLifetime = 300);
+
+    return $cache->get('imageList', function (ItemInterface $item) {
+      $item->expiresAfter(30);
+
+      $ddb = new DynamoDbClient($this->awsConfiguration('dynamodb'));
+      $results = $ddb->scan([
+        'TableName' => 'ImageList'
+      ]);
+
+      return array_map(
+        function ($item) {
+          return [
+            'filename' => $item['filename']['S'],
+            'extension' => $item['extension']['S'] ?? 'jpg',
+            'ctime' => time()
+          ];
+        },
+        $results['Items']
+      );
+    });
   }
 
   /**
@@ -69,26 +107,28 @@ class MainController extends AbstractController
         $generatedUuids[] = $uuid->toString();
       }
     }
-      
-    $ddb = new DynamoDbClient($this->awsConfiguration('dynamodb'));
-    $results = $ddb->scan([
-      'TableName' => 'ImageList'
-    ]);
-
-    $imageList = array_map(
-      function ($item) {
-        return [
-          'filename' => $item['filename']['S'],
-          'extension' => $item['extension']['S']
-        ];
-      },
-      $results['Items']
-    );
 
     return $this->render('main/index.html.twig', [
       'form' => $form->createView(),
-      'imageList' => $imageList,
+      'imageList' => $this->imageList(),
       'generatedUuids' => $generatedUuids,
     ]);
+  }
+
+  /**
+   * @Route("/images", name="images")
+   * An endpoint to return the list of images in JSON format
+   * @return \Symfony\Component\HttpFoundation\Response
+   */
+  public function images()
+  {
+    $response = new Response();
+
+    $response->headers->set('Content-Type', 'application/json');
+    $response->headers->set('Access-Control-Allow-Origin', '*');
+
+    $response->setContent(json_encode($this->imageList()));
+    
+    return $response;
   }
 }

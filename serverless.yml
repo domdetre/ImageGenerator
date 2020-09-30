@@ -66,12 +66,18 @@ resources:
         VersionLabel: 
           Ref: ImageGeneratorApplicationVersion
         OptionSettings:
+          - Namespace: aws:autoscaling:asg
+            OptionName: MinSize
+            Value: 1
+          - Namespace: aws:autoscaling:asg
+            OptionName: MaxSize
+            Value: 3
           - Namespace: aws:autoscaling:launchconfiguration
             OptionName: InstanceType
             Value: t2.small
           - Namespace: aws:autoscaling:launchconfiguration
             OptionName: EC2KeyName
-            Value: dfd-general
+            Value: ${env:EC2_KEYNAME}
           - Namespace: aws:autoscaling:launchconfiguration
             OptionName: IamInstanceProfile
             Value: aws-elasticbeanstalk-ec2-role
@@ -98,7 +104,7 @@ resources:
         Engine: memcached
         CacheSecurityGroupNames:
           - Ref: ImageGeneratorSecurityGroup
-        NumCacheNodes: 1
+        NumCacheNodes: 3
 
     ImageGeneratorDatabase:
       Type: AWS::DynamoDB::Table

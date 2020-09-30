@@ -5,8 +5,15 @@ services:
     ports:
       - 8000:8000
 
+  memcached1:
+    image: memcached
+  memcached2:
+    image: memcached
+  memcached3:
+    image: memcached
+
   php-fpm:
-    image: php:fpm-alpine
+    build: docker/php-fpm
     env_file: 
       - .env
       - .env.local
