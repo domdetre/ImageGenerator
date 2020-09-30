@@ -31,6 +31,47 @@ package:
 
 resources:
   Resources:
+    ImageGeneratorRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - ec2.amazonaws.com
+              Action:
+                - 'sts:AssumeRole'
+        Path: /
+
+    ImageGeneratorPolicy: 
+      Type: "AWS::IAM::Policy"
+      Properties: 
+        PolicyName: generator
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:*
+              Resource: arn:aws:dynamodb:eu-west-1:*:table/ImageList*
+            - Effect: Allow
+              Action:
+                - sqs:SendMessage
+              Resource: arn:aws:sqs:*:*:ImageGenerator*
+        Roles: 
+          - 
+            Ref: ImageGeneratorRole
+
+    ImageGeneratorInstanceProfile: 
+      Type: "AWS::IAM::InstanceProfile"
+      Properties: 
+        Path: "/"
+        Roles: 
+          - 
+            Ref: ImageGeneratorRole
+
     ImageGeneratorQueue:
       Type: AWS::SQS::Queue
       Properties: 
@@ -81,7 +122,8 @@ resources:
             Value: ${env:EC2_KEYNAME}
           - Namespace: aws:autoscaling:launchconfiguration
             OptionName: IamInstanceProfile
-            Value: aws-elasticbeanstalk-ec2-role
+            Value:
+              Ref: ImageGeneratorInstanceProfile
           - Namespace: aws:elasticbeanstalk:container:php:phpini
             OptionName: document_root
             Value: /public
@@ -92,7 +134,11 @@ resources:
           - Namespace: aws:elasticbeanstalk:application:environment
             OptionName: MEMCACHED_ADDRESS
             Value:
-              Fn::GetAtt: [ImageGeneratorCache, ConfigurationEndpoint.Address]
+              Fn::Join:
+                - '://'
+                - - 'memcached'
+                  - 
+                    Fn::GetAtt: [ImageGeneratorCache, ConfigurationEndpoint.Address]
           - Namespace: aws:elasticbeanstalk:application:environment
             OptionName: DYNAMODB_TABLE
             Value: ImageList-${self:provider.stage}

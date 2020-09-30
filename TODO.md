@@ -1,2 +1,3 @@
 - phpunit testing
 - jest testing
+- local stack
