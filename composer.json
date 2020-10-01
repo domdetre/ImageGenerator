@@ -25,8 +25,9 @@
 				"twig/twig": "^3.0"
 		},
     "require-dev": {
-        "symfony/maker-bundle": "^1.21"
-    },
+				"symfony/maker-bundle": "^1.21",
+				"symfony/phpunit-bridge": "^5.1"
+		},
     "config": {
         "optimize-autoloader": true,
         "preferred-install": {
