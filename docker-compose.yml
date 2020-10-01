@@ -20,12 +20,12 @@ services:
     volumes:
       - ./:/var/www
 
-  composer:
-    build: docker/composer
-    working_dir: /var/www
+  php-cli:
+    build: docker/php-cli
+    working_dir: /project
     volumes:
-      - ./:/var/www
-    entrypoint: composer
+      - ./:/project
+    entrypoint: php
 
   nginx:
     depends_on:
