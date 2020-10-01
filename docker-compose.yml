@@ -19,13 +19,13 @@ services:
       - .env.local
     volumes:
       - ./:/var/www
-
-  composer:
-    build: docker/composer
-    working_dir: /var/www
-    volumes:
-      - ./:/var/www
-    entrypoint: composer
+  
+  php-cli: 
+    build: docker/php-cli 
+    working_dir: /project 
+    volumes: 
+      - ./:/project 
+    entrypoint: php
 
   nginx:
     depends_on:
@@ -50,3 +50,9 @@ services:
       - ./docker/initializer:/aws/scripts
     entrypoint: bash
     command: /aws/scripts/init.sh
+
+  node:
+    image: node:12-alpine
+    working_dir: /project
+    volumes:
+      - ./:/project

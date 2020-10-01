@@ -1,2 +1,6 @@
 alias dc='docker-compose'
-alias composer='docker-compose run --rm composer'
+alias composer='docker-compose run --rm --entrypoint composer php-cli'
+alias php='docker-compose run --rm php-cli'
+alias node='docker-compose run --rm node'
+alias npm='docker-compose run --rm --entrypoint npm node'
+alias npx='docker-compose run --rm --entrypoint npx node'

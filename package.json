@@ -5,6 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "jest"
+    "start": "source alias.sh && dc up -d",
+    "stop": "source alias.sh && dc down -v --remove-orphans"
   },
   "author": "",
   "license": "ISC",
