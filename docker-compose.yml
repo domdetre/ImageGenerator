@@ -50,3 +50,9 @@ services:
       - ./docker/initializer:/aws/scripts
     entrypoint: bash
     command: /aws/scripts/init.sh
+
+  node:
+    image: node:12-alpine
+    working_dir: /project
+    volumes:
+      - ./:/project

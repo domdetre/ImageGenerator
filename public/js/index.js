@@ -2,7 +2,7 @@
  * Grab the list of images as JSON and append the new images into the container as cards
  */
 const fetchList = () => {
-  $.getJSON("index.php/images", (imageList) => {
+  $.getJSON("index.php/api/images", (imageList) => {
     $.each(imageList, (key, imageItem) => {
       if (!$(`#image-card-${imageItem.filename}`).length) {
         let imageCard = `
@@ -27,4 +27,22 @@ const fetchList = () => {
 
 $(function() {
   fetchList()
+
+  $("#image_generator_Generate").click(() => {
+    $.post(
+      'index.php/api/images', 
+      {
+        numberOfImages: $('#image_generator_NumberOfImages').val()
+      }
+    )
+  })
+  
+  $("#image_generator_DeleteAll").click(() => {
+    $.ajax(
+      'index.php/api/images',
+      {
+        method: 'DELETE'
+      }
+    )
+  })
 })

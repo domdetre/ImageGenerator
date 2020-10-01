@@ -14,6 +14,7 @@ provider:
     - Effect: Allow
       Action:
         - dynamodb:PutItem
+        - dynamodb:DeleteItem
       Resource: arn:aws:dynamodb:eu-west-1:*:table/ImageList*
 
 layers:
@@ -76,6 +77,11 @@ resources:
       Type: AWS::SQS::Queue
       Properties: 
         QueueName: ImageGenerator-${self:provider.stage}
+
+    ImageDeleterQueue:
+      Type: AWS::SQS::Queue
+      Properties: 
+        QueueName: ImageDeleter-${self:provider.stage}
     
     ImageGeneratorApplication:
       Type: AWS::ElasticBeanstalk::Application
@@ -128,9 +134,13 @@ resources:
             OptionName: document_root
             Value: /public
           - Namespace: aws:elasticbeanstalk:application:environment
-            OptionName: SQS_URL
+            OptionName: SQS_GENERATOR_URL
             Value:
               Ref: ImageGeneratorQueue
+          - Namespace: aws:elasticbeanstalk:application:environment
+            OptionName: SQS_DELETER_URL
+            Value:
+              Ref: ImageDeleterQueue
           - Namespace: aws:elasticbeanstalk:application:environment
             OptionName: MEMCACHED_ADDRESS
             Value:
@@ -183,4 +193,16 @@ functions:
       - sqs:
           arn:
             Fn::GetAtt: [ImageGeneratorQueue, Arn]
+          batchSize: 1
+
+  ImageDeleter:
+    handler: index.imageDeleter
+    layers:
+      - { Ref: SourceLambdaLayer }
+    environment:
+      DYNAMODB_TABLE: ImageList-${self:provider.stage}
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt: [ImageDeleterQueue, Arn]
           batchSize: 1
