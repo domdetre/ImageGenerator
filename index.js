@@ -12,7 +12,7 @@ const imageGenerator = async (event, context) => {
 
   for (let record of event.Records) {
     const { body: filename } = record
-    console.log('body:', filename)
+    console.log('filename:', filename)
 
     await getRandomImage(filename)
     
@@ -27,11 +27,8 @@ const imageGenerator = async (event, context) => {
         },
       }
     }, function(err, data) {
-      if (err) {
-        console.log("Error", err)
-      } else {
-        console.log("Success", data)
-      }
+      if (err) console.log("DynamoDB::putItem", err)
+      else     console.log("DynamoDB::putItem", data)
     }).promise()
   }
 
@@ -47,7 +44,7 @@ const imageGenerator = async (event, context) => {
 const imageDeleter = async (event, context) => {
   for (let record of event.Records) {
     const { body: filename } = record
-    console.log('body:', filename)
+    console.log('filename:', filename)
 
     await Promise.all([
       deleteImageFromS3(filename),
@@ -73,11 +70,8 @@ const deleteImageFromDynamodb = async (filename) => {
       }
     }
   }, function(err, data) {
-    if (err) {
-      console.log("Error", err)
-    } else {
-      console.log("Success", data)
-    }
+    if (err) console.log("Error: DynamoDB::deleteItem", err)
+    else     console.log("Success: DynamoDB::deleteItem", data)
   }).promise()
 }
 
@@ -89,14 +83,13 @@ const deleteImageFromS3 = async (filename) => {
   let s3 = new AWS.S3()
 
   let params = {
-    Bucket: 'images-dfd',
+    Bucket: process.env.S3_BUCKET_IMAGES,
     Key: filename + '.jpg'
   }  
 
   return s3.deleteObject(params, function(err, data) {
-    if (err) console.log(err, err.stack)
-    else     console.log(data)
-    console.log('s3 finished')
+    if (err) console.log('ERROR: S3::deleteObject', err.stack)
+    else     console.log('SUCCESS: S3::deleteObject', data)
   }).promise()
 }
 
@@ -131,15 +124,14 @@ const getRandomImage = (filename) => {
           }    
     
           resolve(s3.putObject(params, function(err, data) {
-            if (err) console.log(err, err.stack)
-            else     console.log(data)
-            console.log('s3 finished')
+            if (err) console.log('ERROR: S3::putObject', err.stack)
+            else     console.log('SUCCESS: S3::putObject', data)
           }).promise())
         })
       }
     )
 
-    req.on('error', (e) => {
+    req.on('ERROR: https.get', (e) => {
       reject(e.message)
     })
 
