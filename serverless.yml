@@ -23,24 +23,22 @@ provider:
 
 layers:
   Source:
-    path: lambda-layer
+    path: lambda/layer
     package:
       include:
         - 'nodejs/node_modules/**'
 
 package:
   include:
-    - 'index.js'
+    - 'lambda/source/*'
   exclude:
     - '**/*'
 
 functions:
   ImageGenerator:
-    handler: index.imageGenerator
+    handler: lambda/source/handlers.imageGenerator
     layers:
       - { Ref: SourceLambdaLayer }
-    environment:
-      DYNAMODB_TABLE: ImageList-${self:provider.stage}
     events:
       - sqs:
           arn:
@@ -48,11 +46,9 @@ functions:
           batchSize: 1
 
   ImageDeleter:
-    handler: index.imageDeleter
+    handler: lambda/source/handlers.imageDeleter
     layers:
       - { Ref: SourceLambdaLayer }
-    environment:
-      DYNAMODB_TABLE: ImageList-${self:provider.stage}
     events:
       - sqs:
           arn:
