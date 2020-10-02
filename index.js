@@ -51,7 +51,7 @@ const imageDeleter = async (event, context) => {
 
     await Promise.all([
       deleteImageFromS3(filename),
-      deleteImageFromDynamodb(filname)
+      deleteImageFromDynamodb(filename)
     ])
   }
 
@@ -67,7 +67,7 @@ const deleteImageFromDynamodb = async (filename) => {
 
   return ddb.deleteItem({
     TableName: process.env.DYNAMODB_TABLE,
-    Item: {
+    Key: {
       filename: {
         S: filename
       }
@@ -83,9 +83,9 @@ const deleteImageFromDynamodb = async (filename) => {
 
 /**
  * Deletes an image from S3
- * @param {string} filname 
+ * @param {string} filename 
  */
-const deleteImageFromS3 = async (filname) => {
+const deleteImageFromS3 = async (filename) => {
   let s3 = new AWS.S3()
 
   let params = {

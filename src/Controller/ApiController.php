@@ -80,6 +80,35 @@ class ApiController extends AbstractController
   }
 
   /**
+   * Sends messages to the defined queue in batches
+   *
+   * @param array $uuidList List of uuids
+   * @param string $queueUrl The url of the queue to send the messages to
+   * @return void
+   */
+  private function sendUuidsToSqs($uuidList, $queueUrl) : void
+  {
+    $sqs = new SqsClient($this->awsConfiguration('sqs'));
+
+    while (count($uuidList)) {
+      $entries = array_map(
+        function ($uuid) {
+          return [
+            'Id' => $uuid,
+            'MessageBody' => $uuid
+          ];
+        },
+        array_splice($uuidList, 0, 10)
+      );
+
+      $sqs->sendMessageBatch([
+        'Entries' => $entries,
+        'QueueUrl' => $queueUrl
+      ]);
+    }
+  }
+
+  /**
    * Generates a list of id and puts them into the SQS queue for further processing
    *
    * @param integer $numberOfImages The number of images to be generated
@@ -87,19 +116,15 @@ class ApiController extends AbstractController
    */
   private function generateImageList(int $numberOfImages) : array
   {
-    $sqs = new SqsClient($this->awsConfiguration('sqs'));
-
-    $generatedUuids = [];
+    $generatedUuidList = [];
     for ($imageNumber = 1; $imageNumber <= $numberOfImages; $imageNumber++) {
       $uuid = Uuid::uuid4(); 
-      $sqs->sendMessage([
-        'MessageBody' => $uuid->toString(),
-        'QueueUrl' => getenv('SQS_GENERATOR_URL')
-      ]);
-      $generatedUuids[] = $uuid->toString();
+      $generatedUuidList[] = $uuid->toString();
     }
 
-    return $generatedUuids;
+    $this->sendUuidsToSqs($generatedUuidList, getenv('SQS_GENERATOR_URL'));
+
+    return $generatedUuidList;
   }
 
   /**
@@ -109,17 +134,14 @@ class ApiController extends AbstractController
    */
   private function deleteAllImages() : array
   {
-    $sqs = new SqsClient($this->awsConfiguration('sqs'));
-
     $imageList = $this->imageList();
-    $queuedImageIdList = [];
-    foreach ($imageList as $image) {
-      $sqs->sendMessage([
-        'MessageBody' => $image['filename'],
-        'QueueUrl' => getenv('SQS_DELETER_URL')
-      ]);
-      $queuedImageIdList[] = $image['filename'];
-    }
+    $queuedImageIdList = array_map(
+      function ($image) {
+        return $image['filename'];
+      },
+      $imageList
+    );
+    $this->sendUuidsToSqs($queuedImageIdList, getenv('SQS_DELETER_URL'));
 
     return $queuedImageIdList;
   }
