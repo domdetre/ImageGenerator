@@ -59,7 +59,7 @@ class ApiController extends AbstractController
     $cache  = new MemcachedAdapter($client, $namespace = 'imageGenerator', $defaultLifetime = 300);
 
     return $cache->get('imageList', function (ItemInterface $item) {
-      $item->expiresAfter(getenv('MEMCACHED_TTL_SECONDS'));
+      $item->expiresAfter((int) getenv('MEMCACHED_TTL_SECONDS'));
 
       $ddb = new DynamoDbClient($this->awsConfiguration('dynamodb'));
       $results = $ddb->scan([
