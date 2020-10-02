@@ -60,7 +60,9 @@ resources:
             - Effect: Allow
               Action:
                 - sqs:SendMessage
-              Resource: arn:aws:sqs:*:*:ImageGenerator*
+              Resource: 
+                - arn:aws:sqs:*:*:ImageGenerator*
+                - arn:aws:sqs:*:*:ImageDeleter*
         Roles: 
           - 
             Ref: ImageGeneratorRole
